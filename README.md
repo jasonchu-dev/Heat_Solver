@@ -8,7 +8,7 @@ $$\frac{\partial u}{\partial t} =k \frac{\partial^2 u}{\partial x^2}$$
 
 $$
 \begin{align*}
-x\in[0,L]
+x\in[0,L] \\
 t\in[0,1]
 \end{align*}
 $$
