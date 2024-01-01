@@ -86,10 +86,14 @@ print(f'Interior Points: {interior_pts.shape, interior_pts.dtype}')
 class PINN(nn.Module):
     def __init__(self):
         super().__init__()
-        neurons = 32
+        neurons = 64
         self.loss = nn.MSELoss(reduction='sum')
         self.network = nn.Sequential(
             nn.Linear(2, neurons),
+            nn.Tanh(),
+            nn.Linear(neurons, neurons),
+            nn.Tanh(),
+            nn.Linear(neurons, neurons),
             nn.Tanh(),
             nn.Linear(neurons, neurons),
             nn.Tanh(),
@@ -162,7 +166,7 @@ def format_number(num, length=21):
 model = PINN().to(device, dtype=torch.float32)
 optimizer = torch.optim.LBFGS(model.parameters(), lr=0.1)
 scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=25, verbose=True, min_lr=1e-4)
-epochs = 150
+epochs = 500
 
 bc_losses = []
 phys_losses = []
@@ -221,16 +225,6 @@ def load_model():
 save_model('model.tar', epoch, model, optimizer, scheduler, total_losses[-1])
 # i, model, optimizer, scheduler, loss = load_model()
 
-plt.figure(figsize=(30, 5))
-plt.plot(bc_losses, label='Boundary', color='#9933FF')
-plt.plot(phys_losses, label='Physics', color='#3366FF')
-plt.plot(total_losses, label='Total Loss', color='orange')
-plt.title('Loss Plot')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
-plt.show()
-
 x = torch.linspace(x_start, x_end, x_pts)
 t = torch.linspace(t_start, t_end, t_pts)
 
@@ -244,21 +238,63 @@ with torch.no_grad():
 
 pred = pred.reshape(t_pts, x_pts).to('cpu')
 
-fig = plt.figure(figsize=(30, 30))
-ax1 = fig.add_subplot(121, projection='3d')
-ax1.set_xlabel('x')
-ax1.set_ylabel('t')
-ax1.set_zlabel('NN(x, t)')
-ax1.set_title(f'Prediction')
+fig = plt.figure(figsize=(25, 30))
+gs = fig.add_gridspec(3, 2, height_ratios=[1, 2, 2], width_ratios=[1, 1])
 
-ax1.plot_surface(x, t, pred, cmap='viridis')
+axes1 = fig.add_subplot(gs[0, :])
+axes2 = fig.add_subplot(gs[1, 0], projection='3d')
+axes3 = fig.add_subplot(gs[1, 1], projection='3d')
+axes4 = fig.add_subplot(gs[2, 0])
+axes5 = fig.add_subplot(gs[2, 1])
 
-ax2 = fig.add_subplot(122, projection='3d')
-ax2.set_xlabel('x')
-ax2.set_ylabel('t')
-ax2.set_zlabel('u(x, t)')
-ax2.set_title(f'Ground Truth')
+axes4.set_aspect('equal')
+axes5.set_aspect('equal')
 
-ax2.plot_surface(x, t, u(x, t), cmap='viridis')
+contour = True
+
+axes1.plot(bc_losses, label='Boundary', color='#9933FF')
+axes1.plot(phys_losses, label='Physics', color='#3366FF')
+axes1.plot(total_losses, label='Total Loss', color='orange')
+axes1.set_title('Loss Plot')
+axes1.set_xlabel('Epochs')
+axes1.set_ylabel('Loss')
+axes1.grid(True)
+axes1.legend()
+
+axes2.set_xlabel('x')
+axes2.set_ylabel('t')
+axes2.set_zlabel('NN(x, t)')
+axes2.set_title('Prediction')
+axes2.plot_surface(x, t, pred, cmap='viridis')
+
+axes3.set_xlabel('x')
+axes3.set_ylabel('t')
+axes3.set_zlabel('u(x, t)')
+axes3.set_title('Ground Truth')
+axes3.plot_surface(x, t, u(x, t), cmap='viridis')
+
+if contour == True:
+    axes4.set_xlabel('x')
+    axes4.set_ylabel('t')
+    axes4.set_title('Prediction')
+    axes4.contour(x, t, pred, 50)
+
+    axes5.set_xlabel('x')
+    axes5.set_ylabel('t')
+    axes5.set_title('Ground Truth')
+    axes5.contour(x, t, u(x, t), 50)
+
+else:
+    axes4.set_xlabel('x')
+    axes4.set_ylabel('t')
+    axes4.set_title('Prediction')
+    axes4.contourf(x, t, pred, 50)
+
+    axes5.set_xlabel('x')
+    axes5.set_ylabel('t')
+    axes5.set_title('Ground Truth')
+    axes5.contourf(x, t, u(x, t), 50)
+
+plt.subplots_adjust(hspace=0.5)
 
 plt.show()
