@@ -6,8 +6,12 @@ Solving 1d heat equation using Physics-informed neural network.
 
 $$\frac{\partial u}{\partial t} =k \frac{\partial^2 u}{\partial x^2}$$
 
-$$x\in[0,L]$$
-$$t\in[0,1]$$
+$$
+\begin{align*}
+x\in[0,L]
+t\in[0,1]
+\end{align*}
+$$
 
 **Initial and Boundary Conditions**
 
